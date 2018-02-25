@@ -104,7 +104,7 @@ with tf.Session() as sess:
 
         # optional channel swapping and reshaping
 
-        # tensorflow part
+        # tensorflow part, like caffe_tf.py, forward pass is wasted
         _, dx = sess.run([tf_net.optimizer, tf_net.dX],
                               feed_dict = {tf_net.X: x, tf_net.dL1: dl1})
 
