@@ -48,15 +48,16 @@ import caffe
 #     d Loss/d W2 = (L2 - Y) * L1
 #                = [2508800]_10
 
-#     We optimize with SGD with learning rate = 0.01
+#     We optimize with SGD with top half learning rate = 0.01
+#     and bottom half learning rate 0.001
 
-#     W2 updated is  5 - 2508800 * 0.01 = -2503.800
+#     W2 updated is  5 - 2508800 * 0.01 = -25083
 
 #     d Loss/d W1 = d Loss/ d L2 * d L2 / d L1  * d L1 / d W1
 #                 = 11200 * [5]_{10x1} * [1]_{1x32}
 #                 = [56000]_{10x32}
 
-#     W1 updated is  7 - 56000 * 0.01 = -553.0
+#     W1 updated is  7 - 56000 * 0.001 = -49.0
                  
 
 
@@ -78,7 +79,7 @@ def create_caffe_net ():
         f.write(model_txt)
         pass
     solver_txt = 'net: "' + model_file.name + '''"
-        base_lr: 0.01
+        base_lr: 0.001
         lr_policy: "step"
         solver_mode: GPU
         stepsize: 1000000
@@ -113,7 +114,7 @@ class create_tf_net:    # this is to be used as a function
 
         net.dL1 = tf.gradients(net.loss, net.L1)[0]
 
-        net.optimizer = tf.train.GradientDescentOptimizer(0.001).minimize(net.loss)
+        net.optimizer = tf.train.GradientDescentOptimizer(0.01).minimize(net.loss)
         pass
     pass
 
@@ -174,7 +175,8 @@ with tf.Session() as sess:
         caffe_net.blobs['L1'].diff[...] = dl1
 
         # caffe backward part
-        caffe_net.backward()
+        # caffe_net.backward() -- not necessary
+        # -- step below does forward (wasted) and backward
 
         # update caffe gradients
         caffe_solver.step(1)
@@ -183,8 +185,8 @@ with tf.Session() as sess:
 
         print 'loss (expect 62720000):', loss
         print 'dX (expect 3920000s):', caffe_net.blobs['X'].diff
-        print 'new W2 (expect -2503.800s):', tf_net.W2.eval()
-        print 'new W1 (expect -553.0s):', caffe_net.params['L1'][0].data
+        print 'new W2 (expect -25083s):', tf_net.W2.eval()
+        print 'new W1 (expect -49.0s):', caffe_net.params['L1'][0].data
         break
     pass
 
